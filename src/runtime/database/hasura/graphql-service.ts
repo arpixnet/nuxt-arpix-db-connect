@@ -1,18 +1,18 @@
-import { GraphQLClient, gql } from 'graphql-request';
-import { 
-  WhereClause, 
-  OrderByClause, 
-  OnConflictClause, 
-  BatchOperation 
-} from '../interface/database.interface';
+import { GraphQLClient, gql } from 'graphql-request'
+import type {
+  WhereClause,
+  OrderByClause,
+  OnConflictClause,
+  BatchOperation,
+} from '../interface/database.interface'
 
 /**
  * GraphQL Service Error class
  */
 export class GraphQLServiceError extends Error {
   constructor(message: string) {
-    super(message);
-    this.name = 'GraphQLServiceError';
+    super(message)
+    this.name = 'GraphQLServiceError'
   }
 }
 
@@ -21,8 +21,8 @@ export class GraphQLServiceError extends Error {
  */
 export class NetworkError extends GraphQLServiceError {
   constructor(message: string) {
-    super(message);
-    this.name = 'NetworkError';
+    super(message)
+    this.name = 'NetworkError'
   }
 }
 
@@ -30,11 +30,11 @@ export class NetworkError extends GraphQLServiceError {
  * GraphQL Error class
  */
 export class GraphQLError extends GraphQLServiceError {
-  details?: unknown;
+  details?: unknown
 
   constructor(message: string) {
-    super(message);
-    this.name = 'GraphQLError';
+    super(message)
+    this.name = 'GraphQLError'
   }
 }
 
@@ -43,8 +43,8 @@ export class GraphQLError extends GraphQLServiceError {
  */
 export class ValidationError extends GraphQLServiceError {
   constructor(message: string) {
-    super(message);
-    this.name = 'ValidationError';
+    super(message)
+    this.name = 'ValidationError'
   }
 }
 
@@ -53,8 +53,8 @@ export class ValidationError extends GraphQLServiceError {
  */
 export class PermissionDeniedError extends GraphQLServiceError {
   constructor(message: string) {
-    super(message);
-    this.name = 'PermissionDeniedError';
+    super(message)
+    this.name = 'PermissionDeniedError'
   }
 }
 
@@ -62,9 +62,9 @@ export class PermissionDeniedError extends GraphQLServiceError {
  * GraphQL Service class for interacting with GraphQL APIs
  */
 export class GraphQLService {
-  private client: GraphQLClient;
-  private debug: boolean;
-  private headers: Record<string, string>;
+  private client: GraphQLClient
+  private debug: boolean
+  private headers: Record<string, string>
 
   /**
    * Create a new GraphQLService instance
@@ -73,15 +73,15 @@ export class GraphQLService {
    * @param debug Whether to enable debug logging
    */
   constructor(url: string, headers: Record<string, string> = {}, debug: boolean = false) {
-    this.headers = { ...headers };
-    this.client = new GraphQLClient(url, { headers: this.headers });
-    this.debug = debug;
+    this.headers = { ...headers }
+    this.client = new GraphQLClient(url, { headers: this.headers })
+    this.debug = debug
 
     if (this.debug) {
       console.log('GraphQLService initialized with:', {
         url,
         headers: Object.keys(headers),
-      });
+      })
     }
   }
 
@@ -90,8 +90,8 @@ export class GraphQLService {
    * @param headers Headers to set
    */
   setHeaders(headers: Record<string, string>): void {
-    this.headers = { ...headers };
-    this.client.setHeaders(this.headers);
+    this.headers = { ...headers }
+    this.client.setHeaders(this.headers)
   }
 
   /**
@@ -100,8 +100,8 @@ export class GraphQLService {
    * @param value Header value
    */
   setHeader(key: string, value: string): void {
-    this.headers[key] = value;
-    this.client.setHeader(key, value);
+    this.headers[key] = value
+    this.client.setHeader(key, value)
   }
 
   /**
@@ -111,10 +111,13 @@ export class GraphQLService {
    */
   getClient(token?: string): GraphQLClient {
     if (token) {
-      const headers = { ...this.headers, Authorization: `Bearer ${token}` };
-      return new GraphQLClient(this.client.url, { headers });
+      const headers = { ...this.headers, Authorization: `Bearer ${token}` }
+      // Create a new client with the same URL
+      // We need to extract the URL from the client
+      const url = (this.client as any).url || (this.client as any).endpoint
+      return new GraphQLClient(url, { headers })
     }
-    return this.client;
+    return this.client
   }
 
   /**
@@ -124,37 +127,37 @@ export class GraphQLService {
    */
   private async handleRequest<T>(requestFn: () => Promise<T>): Promise<T> {
     try {
-      const result = await requestFn();
+      const result = await requestFn()
       if (this.debug) {
-        console.log('GraphQL operation successful:', result);
+        console.log('GraphQL operation successful:', result)
       }
-      return result;
-    } catch (error: unknown) {
+      return result
+    }
+    catch (error: unknown) {
       if (this.debug) {
-        console.error('GraphQL operation failed:', error);
+        console.error('GraphQL operation failed:', error)
       }
 
       // Network error
       if (error instanceof Error && error.message.includes('Network')) {
-        throw new NetworkError('Network error occurred');
+        throw new NetworkError('Network error occurred')
       }
 
       // GraphQL error
-      if (typeof error === 'object' && error !== null && 'response' in error && 
-          error.response && typeof error.response === 'object' && 'errors' in error.response) {
-        const gqlError = error.response.errors?.[0];
-        
+      if (typeof error === 'object' && error !== null && 'response' in error && error.response && typeof error.response === 'object' && 'errors' in error.response) {
+        const gqlError = error.response?.errors?.[0]
+
         if (typeof gqlError === 'object' && gqlError !== null) {
           // Check for permission errors
           if ('extensions' in gqlError && typeof gqlError.extensions === 'object' && gqlError.extensions !== null) {
-            const extensions = gqlError.extensions;
+            const extensions = gqlError.extensions
             if ('code' in extensions) {
-              const code = extensions.code;
+              const code = extensions.code
               if (code === 'permission-denied') {
-                throw new PermissionDeniedError('Permission denied');
+                throw new PermissionDeniedError('Permission denied')
               }
               if (code === 'invalid-jwt') {
-                throw new PermissionDeniedError('Invalid authentication token');
+                throw new PermissionDeniedError('Invalid authentication token')
               }
             }
           }
@@ -162,27 +165,27 @@ export class GraphQLService {
           // Get error message
           const message = 'message' in gqlError && typeof gqlError.message === 'string'
             ? gqlError.message
-            : 'GraphQL operation failed';
-          
-          const graphqlError = new GraphQLError(message);
-          graphqlError.details = gqlError;
-          throw graphqlError;
+            : 'GraphQL operation failed'
+
+          const graphqlError = new GraphQLError(message)
+          graphqlError.details = gqlError
+          throw graphqlError
         }
-        
-        throw new GraphQLError('GraphQL operation failed');
+
+        throw new GraphQLError('GraphQL operation failed')
       }
 
       // Validation error
       if (error instanceof GraphQLServiceError) {
-        throw error;
+        throw error
       }
 
       // Unexpected error
       const errorMessage = typeof error === 'object' && error !== null && 'message' in error
         ? String(error.message)
-        : 'Unexpected error';
-      
-      throw new GraphQLServiceError(errorMessage);
+        : 'Unexpected error'
+
+      throw new GraphQLServiceError(errorMessage)
     }
   }
 
@@ -194,18 +197,18 @@ export class GraphQLService {
    */
   async query<T = unknown>(query: string, variables?: Record<string, unknown>): Promise<T> {
     if (this.debug) {
-      console.log('GraphQL query:', query, variables);
+      console.log('GraphQL query:', query, variables)
     }
 
     return this.handleRequest(async () => {
-      const result = await this.client.request<T>(gql`${query}`, variables);
-      
+      const result = await this.client.request<T>(gql`${query}`, variables)
+
       if (this.debug) {
-        console.log('GraphQL query result:', result);
+        console.log('GraphQL query result:', result)
       }
-      
-      return result;
-    });
+
+      return result
+    })
   }
 
   /**
@@ -216,18 +219,18 @@ export class GraphQLService {
    */
   async mutate<T = unknown>(mutation: string, variables?: Record<string, unknown>): Promise<T> {
     if (this.debug) {
-      console.log('GraphQL mutation:', mutation, variables);
+      console.log('GraphQL mutation:', mutation, variables)
     }
 
     return this.handleRequest(async () => {
-      const result = await this.client.request<T>(gql`${mutation}`, variables);
-      
+      const result = await this.client.request<T>(gql`${mutation}`, variables)
+
       if (this.debug) {
-        console.log('GraphQL mutation result:', result);
+        console.log('GraphQL mutation result:', result)
       }
-      
-      return result;
-    });
+
+      return result
+    })
   }
 
   /**
@@ -245,31 +248,32 @@ export class GraphQLService {
   async get<T = unknown>(
     tableName: string,
     options: {
-      select: string | string[] | Record<string, unknown>;
-      where?: WhereClause;
-      limit?: number;
-      offset?: number;
-      orderBy?: OrderByClause | OrderByClause[];
-      aggregate?: string;
+      select: string | string[] | Record<string, unknown>
+      where?: WhereClause
+      limit?: number
+      offset?: number
+      orderBy?: OrderByClause | OrderByClause[]
+      aggregate?: string
     },
   ): Promise<T> {
-    const { select, where, limit, offset, orderBy, aggregate } = options;
-    
+    const { select, where, limit, offset, orderBy, aggregate } = options
+
     // Convert select to string if it's an array
-    let selectStr = select;
+    let selectStr = select
     if (Array.isArray(select)) {
-      selectStr = select.join(' ');
-    } else if (typeof select === 'object') {
-      selectStr = this.objectToGraphQLSelection(select);
+      selectStr = select.join(' ')
+    }
+    else if (typeof select === 'object') {
+      selectStr = this.objectToGraphQLSelection(select)
     }
 
     // Build the query
     let query = `query {
-      ${tableName}`;
+      ${tableName}`
 
     // Add where clause
     if (where) {
-      query += `(where: ${this.objectToGraphQLParams(where)})`;
+      query += `(where: ${this.objectToGraphQLParams(where)})`
     }
 
     // Add limit
@@ -286,16 +290,14 @@ export class GraphQLService {
     if (orderBy) {
       const orderByStr = Array.isArray(orderBy)
         ? `[${orderBy.map(o => this.objectToGraphQLParams(o)).join(', ')}]`
-        : this.objectToGraphQLParams(orderBy);
-      
+        : this.objectToGraphQLParams(orderBy)
+
       query += `${where || limit || offset ? '' : '('}order_by: ${orderByStr}${where || limit || offset ? '' : ')'}`
     }
 
     // Close parameters if needed
-    if ((where && (limit || offset || orderBy)) || 
-        (!where && limit && (offset || orderBy)) || 
-        (!where && !limit && offset && orderBy)) {
-      query += ')';
+    if ((where && (limit || offset || orderBy)) || (!where && limit && (offset || orderBy)) || (!where && !limit && offset && orderBy)) {
+      query += ')'
     }
 
     // Add selection
@@ -304,18 +306,19 @@ export class GraphQLService {
         aggregate {
           ${aggregate}
         }
-      }`;
-    } else {
+      }`
+    }
+    else {
       query += ` {
         ${selectStr}
-      }`;
+      }`
     }
 
     // Close the query
     query += `
-    }`;
+    }`
 
-    return this.query<T>(query);
+    return this.query<T>(query)
   }
 
   /**
@@ -334,43 +337,43 @@ export class GraphQLService {
   ): Promise<T> {
     // Validate data
     if (!data) {
-      throw new ValidationError('Data is required for insert operation');
+      throw new ValidationError('Data is required for insert operation')
     }
 
     // Convert returning to string if it's an array
     if (Array.isArray(returning)) {
-      returning = returning.join(' ');
+      returning = returning.join(' ')
     }
 
     // Build the mutation
     let mutation = `mutation {
-      insert_${tableName}(`;
-    
+      insert_${tableName}(`
+
     // Add objects
-    mutation += `objects: ${this.objectToGraphQLParams(Array.isArray(data) ? data : [data])}`;
-    
+    mutation += `objects: ${this.objectToGraphQLParams(Array.isArray(data) ? data : [data])}`
+
     // Add on_conflict
     if (onConflict) {
       mutation += `, on_conflict: {
         constraint: ${onConflict.constraint},
-        update_columns: [${onConflict.update_columns.map(c => c).join(', ')}]`;
-      
+        update_columns: [${onConflict.update_columns.map(c => c).join(', ')}]`
+
       if (onConflict.where) {
         mutation += `,
-        where: ${this.objectToGraphQLParams(onConflict.where)}`;
+        where: ${this.objectToGraphQLParams(onConflict.where)}`
       }
-      
+
       mutation += `
-      }`;
+      }`
     }
-    
+
     // Close parameters and add returning
     mutation += `) {
       ${returning}
     }
-    }`;
+    }`
 
-    return this.mutate<T>(mutation);
+    return this.mutate<T>(mutation)
   }
 
   /**
@@ -389,16 +392,16 @@ export class GraphQLService {
   ): Promise<T> {
     // Validate data and where
     if (!data || Object.keys(data).length === 0) {
-      throw new ValidationError('Data is required for update operation');
+      throw new ValidationError('Data is required for update operation')
     }
-    
+
     if (!where || Object.keys(where).length === 0) {
-      throw new ValidationError('Where clause is required for update operation');
+      throw new ValidationError('Where clause is required for update operation')
     }
 
     // Convert returning to string if it's an array
     if (Array.isArray(returning)) {
-      returning = returning.join(' ');
+      returning = returning.join(' ')
     }
 
     // Build the mutation
@@ -409,9 +412,9 @@ export class GraphQLService {
       ) {
         ${returning}
       }
-    }`;
+    }`
 
-    return this.mutate<T>(mutation);
+    return this.mutate<T>(mutation)
   }
 
   /**
@@ -428,12 +431,12 @@ export class GraphQLService {
   ): Promise<T> {
     // Validate data
     if (!data || data.length === 0) {
-      throw new ValidationError('Data is required for updateMany operation');
+      throw new ValidationError('Data is required for updateMany operation')
     }
 
     // Convert returning to string if it's an array
     if (Array.isArray(returning)) {
-      returning = returning.join(' ');
+      returning = returning.join(' ')
     }
 
     // Create batch operations
@@ -444,9 +447,9 @@ export class GraphQLService {
       where: item.where,
       returning,
       alias: `update_${index}`,
-    }));
+    }))
 
-    return this.batch<T>(operations);
+    return this.batch<T>(operations)
   }
 
   /**
@@ -463,12 +466,12 @@ export class GraphQLService {
   ): Promise<T> {
     // Validate where
     if (!where || Object.keys(where).length === 0) {
-      throw new ValidationError('Where clause is required for delete operation');
+      throw new ValidationError('Where clause is required for delete operation')
     }
 
     // Convert returning to string if it's an array
     if (Array.isArray(returning)) {
-      returning = returning.join(' ');
+      returning = returning.join(' ')
     }
 
     // Build the mutation
@@ -478,9 +481,9 @@ export class GraphQLService {
       ) {
         ${returning}
       }
-    }`;
+    }`
 
-    return this.mutate<T>(mutation);
+    return this.mutate<T>(mutation)
   }
 
   /**
@@ -490,28 +493,28 @@ export class GraphQLService {
    */
   async batch<T = unknown>(operations: BatchOperation[]): Promise<T> {
     if (!operations.length) {
-      throw new ValidationError('No operations provided for batch');
+      throw new ValidationError('No operations provided for batch')
     }
 
     const mutations = operations.map((op) => {
-      const alias = op.alias || `${op.type}_${op.table}`;
-      
+      const alias = op.alias || `${op.type}_${op.table}`
+
       switch (op.type) {
         case 'insert':
           return `
             ${alias}: insert_${op.table}(
               objects: ${this.objectToGraphQLParams(Array.isArray(op.data) ? op.data : [op.data])},
-              ${op.onConflict 
+              ${op.onConflict
                 ? `on_conflict: {
                     constraint: ${op.onConflict.constraint},
                     update_columns: [${op.onConflict.update_columns.map(c => c).join(', ')}]
                     ${op.onConflict.where ? `, where: ${this.objectToGraphQLParams(op.onConflict.where)}` : ''}
-                  }` 
+                  }`
                 : ''}
             ) {
               ${op.returning || 'affected_rows'}
             }
-          `;
+          `
         case 'update':
           return `
             ${alias}: update_${op.table}(
@@ -520,7 +523,7 @@ export class GraphQLService {
             ) {
               ${op.returning || 'affected_rows'}
             }
-          `;
+          `
         case 'delete':
           return `
             ${alias}: delete_${op.table}(
@@ -528,13 +531,13 @@ export class GraphQLService {
             ) {
               ${op.returning || 'affected_rows'}
             }
-          `;
+          `
         default:
-          throw new ValidationError('Invalid operation type');
+          throw new ValidationError('Invalid operation type')
       }
-    });
+    })
 
-    return this.mutate<T>(`mutation { ${mutations.join('\n')} }`);
+    return this.mutate<T>(`mutation { ${mutations.join('\n')} }`)
   }
 
   /**
@@ -544,27 +547,27 @@ export class GraphQLService {
    */
   private objectToGraphQLParams(obj: unknown): string {
     if (obj === null || obj === undefined) {
-      return 'null';
+      return 'null'
     }
 
     if (typeof obj !== 'object') {
-      return JSON.stringify(obj);
+      return JSON.stringify(obj)
     }
 
     if (Array.isArray(obj)) {
-      return `[${obj.map(item => this.objectToGraphQLParams(item)).join(', ')}]`;
+      return `[${obj.map(item => this.objectToGraphQLParams(item)).join(', ')}]`
     }
 
     const entries = Object.entries(obj as Record<string, unknown>).map(([key, value]) => {
       // Handle special operators
       if (key.startsWith('_')) {
-        return `${key}: ${this.objectToGraphQLParams(value)}`;
+        return `${key}: ${this.objectToGraphQLParams(value)}`
       }
-      
-      return `${key}: ${this.objectToGraphQLParams(value)}`;
-    });
 
-    return `{${entries.join(', ')}}`;
+      return `${key}: ${this.objectToGraphQLParams(value)}`
+    })
+
+    return `{${entries.join(', ')}}`
   }
 
   /**
@@ -575,14 +578,14 @@ export class GraphQLService {
   private objectToGraphQLSelection(obj: Record<string, unknown>): string {
     return Object.entries(obj).map(([key, value]) => {
       if (value === true) {
-        return key;
+        return key
       }
-      
+
       if (typeof value === 'object' && value !== null) {
-        return `${key} { ${this.objectToGraphQLSelection(value as Record<string, unknown>)} }`;
+        return `${key} { ${this.objectToGraphQLSelection(value as Record<string, unknown>)} }`
       }
-      
-      return '';
-    }).filter(Boolean).join(' ');
+
+      return ''
+    }).filter(Boolean).join(' ')
   }
 }

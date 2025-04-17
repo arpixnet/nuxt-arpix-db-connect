@@ -1,44 +1,44 @@
-import { createClient } from 'graphql-ws';
-import type { 
-  DatabaseInterface, 
-  QueryOptions, 
+import { createClient } from 'graphql-ws'
+import type {
+  DatabaseInterface,
+  QueryOptions,
   SubscriptionOptions,
   WhereClause,
   OrderByClause,
   OnConflictClause,
-  BatchOperation
-} from '../interface/database.interface';
-import { GraphQLService } from './graphql-service';
+  BatchOperation,
+} from '../interface/database.interface'
+import { GraphQLService } from './graphql-service'
 
 /**
  * Options for Hasura connector
  */
 export interface HasuraConnectorOptions {
-  url: string;
-  wsUrl?: string;
-  headers?: Record<string, string>;
-  debug?: boolean;
+  url: string
+  wsUrl?: string
+  headers?: Record<string, string>
+  debug?: boolean
 }
 
 /**
  * Hasura connector implementation
  */
 export class HasuraConnector implements DatabaseInterface {
-  private graphqlService: GraphQLService;
-  private wsClient: ReturnType<typeof createClient> | null = null;
-  private debug: boolean;
-  private headers: Record<string, string>;
+  private graphqlService: GraphQLService
+  private wsClient: ReturnType<typeof createClient> | null = null
+  private debug: boolean
+  private headers: Record<string, string>
 
   /**
    * Create a new HasuraConnector instance
    * @param options Connector options
    */
   constructor(options: HasuraConnectorOptions) {
-    this.debug = options.debug || false;
-    this.headers = options.headers || {};
-    
+    this.debug = options.debug || false
+    this.headers = options.headers || {}
+
     // Initialize GraphQL service for queries and mutations
-    this.graphqlService = new GraphQLService(options.url, this.headers, this.debug);
+    this.graphqlService = new GraphQLService(options.url, this.headers, this.debug)
 
     // Initialize WebSocket client for subscriptions if wsUrl is provided
     if (options.wsUrl && typeof window !== 'undefined') {
@@ -47,7 +47,7 @@ export class HasuraConnector implements DatabaseInterface {
         connectionParams: {
           headers: this.headers,
         },
-      });
+      })
     }
 
     if (this.debug) {
@@ -55,7 +55,7 @@ export class HasuraConnector implements DatabaseInterface {
         url: options.url,
         wsUrl: options.wsUrl,
         headers: Object.keys(this.headers),
-      });
+      })
     }
   }
 
@@ -65,11 +65,11 @@ export class HasuraConnector implements DatabaseInterface {
   async query<T = unknown>(query: string, options?: QueryOptions): Promise<T> {
     if (options?.headers) {
       // Merge headers for this specific request
-      const mergedHeaders = { ...this.headers, ...options.headers };
-      this.graphqlService.setHeaders(mergedHeaders);
+      const mergedHeaders = { ...this.headers, ...options.headers }
+      this.graphqlService.setHeaders(mergedHeaders)
     }
 
-    return this.graphqlService.query<T>(query, options?.variables);
+    return this.graphqlService.query<T>(query, options?.variables)
   }
 
   /**
@@ -78,11 +78,11 @@ export class HasuraConnector implements DatabaseInterface {
   async mutate<T = unknown>(mutation: string, options?: QueryOptions): Promise<T> {
     if (options?.headers) {
       // Merge headers for this specific request
-      const mergedHeaders = { ...this.headers, ...options.headers };
-      this.graphqlService.setHeaders(mergedHeaders);
+      const mergedHeaders = { ...this.headers, ...options.headers }
+      this.graphqlService.setHeaders(mergedHeaders)
     }
 
-    return this.graphqlService.mutate<T>(mutation, options?.variables);
+    return this.graphqlService.mutate<T>(mutation, options?.variables)
   }
 
   /**
@@ -91,15 +91,15 @@ export class HasuraConnector implements DatabaseInterface {
   async get<T = unknown>(
     tableName: string,
     options: {
-      select: string | string[] | Record<string, unknown>;
-      where?: WhereClause;
-      limit?: number;
-      offset?: number;
-      orderBy?: OrderByClause | OrderByClause[];
-      aggregate?: string;
+      select: string | string[] | Record<string, unknown>
+      where?: WhereClause
+      limit?: number
+      offset?: number
+      orderBy?: OrderByClause | OrderByClause[]
+      aggregate?: string
     },
   ): Promise<T> {
-    return this.graphqlService.get<T>(tableName, options);
+    return this.graphqlService.get<T>(tableName, options)
   }
 
   /**
@@ -111,7 +111,7 @@ export class HasuraConnector implements DatabaseInterface {
     onConflict: OnConflictClause | null = null,
     returning: string | string[] = 'affected_rows',
   ): Promise<T> {
-    return this.graphqlService.insert<T>(tableName, data, onConflict, returning);
+    return this.graphqlService.insert<T>(tableName, data, onConflict, returning)
   }
 
   /**
@@ -123,7 +123,7 @@ export class HasuraConnector implements DatabaseInterface {
     where: WhereClause,
     returning: string | string[] = 'affected_rows',
   ): Promise<T> {
-    return this.graphqlService.update<T>(tableName, data, where, returning);
+    return this.graphqlService.update<T>(tableName, data, where, returning)
   }
 
   /**
@@ -134,7 +134,7 @@ export class HasuraConnector implements DatabaseInterface {
     data: Array<{ data: Record<string, unknown>, where: WhereClause }>,
     returning: string | string[] = 'affected_rows',
   ): Promise<T> {
-    return this.graphqlService.updateMany<T>(tableName, data, returning);
+    return this.graphqlService.updateMany<T>(tableName, data, returning)
   }
 
   /**
@@ -145,14 +145,14 @@ export class HasuraConnector implements DatabaseInterface {
     where: WhereClause,
     returning: string | string[] = 'affected_rows',
   ): Promise<T> {
-    return this.graphqlService.delete<T>(tableName, where, returning);
+    return this.graphqlService.delete<T>(tableName, where, returning)
   }
 
   /**
    * Execute a batch of operations
    */
   async batch<T = unknown>(operations: BatchOperation[]): Promise<T> {
-    return this.graphqlService.batch<T>(operations);
+    return this.graphqlService.batch<T>(operations)
   }
 
   /**
@@ -160,11 +160,11 @@ export class HasuraConnector implements DatabaseInterface {
    */
   subscribe<T = unknown>(subscription: string, options?: SubscriptionOptions) {
     if (!this.wsClient) {
-      throw new Error('WebSocket client not initialized. Please provide wsUrl in the options.');
+      throw new Error('WebSocket client not initialized. Please provide wsUrl in the options.')
     }
 
     if (this.debug) {
-      console.log('HasuraConnector subscription:', subscription, options?.variables);
+      console.log('HasuraConnector subscription:', subscription, options?.variables)
     }
 
     const unsubscribe = this.wsClient.subscribe(
@@ -175,47 +175,47 @@ export class HasuraConnector implements DatabaseInterface {
       {
         next: (data: { data: T }) => {
           if (this.debug) {
-            console.log('HasuraConnector subscription data:', data);
+            console.log('HasuraConnector subscription data:', data)
           }
-          options?.onData?.(data.data);
+          options?.onData?.(data.data)
         },
         error: (error: unknown) => {
           if (this.debug) {
-            console.error('HasuraConnector subscription error:', error);
+            console.error('HasuraConnector subscription error:', error)
           }
-          options?.onError?.(error);
+          options?.onError?.(error)
         },
         complete: () => {
           if (this.debug) {
-            console.log('HasuraConnector subscription completed');
+            console.log('HasuraConnector subscription completed')
           }
         },
       },
-    );
+    )
 
     return {
       unsubscribe: () => {
         if (this.debug) {
-          console.log('HasuraConnector unsubscribing');
+          console.log('HasuraConnector unsubscribing')
         }
-        unsubscribe();
+        unsubscribe()
       },
-    };
+    }
   }
 
   /**
    * Set headers for all subsequent requests
    */
   setHeaders(headers: Record<string, string>): void {
-    this.headers = headers;
-    this.graphqlService.setHeaders(headers);
+    this.headers = headers
+    this.graphqlService.setHeaders(headers)
   }
 
   /**
    * Add a single header for all subsequent requests
    */
   setHeader(key: string, value: string): void {
-    this.headers[key] = value;
-    this.graphqlService.setHeader(key, value);
+    this.headers[key] = value
+    this.graphqlService.setHeader(key, value)
   }
 }

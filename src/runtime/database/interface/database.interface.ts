@@ -10,7 +10,7 @@ export interface DatabaseInterface {
    * @param headers Optional headers for the request
    * @returns Query result
    */
-  query<T = unknown>(query: string, options?: QueryOptions): Promise<T>;
+  query<T = unknown>(query: string, options?: QueryOptions): Promise<T>
 
   /**
    * Execute a raw GraphQL mutation
@@ -19,7 +19,7 @@ export interface DatabaseInterface {
    * @param headers Optional headers for the request
    * @returns Mutation result
    */
-  mutate<T = unknown>(mutation: string, options?: QueryOptions): Promise<T>;
+  mutate<T = unknown>(mutation: string, options?: QueryOptions): Promise<T>
 
   /**
    * Subscribe to a GraphQL subscription (if supported)
@@ -27,7 +27,7 @@ export interface DatabaseInterface {
    * @param options Subscription options
    * @returns Subscription object with unsubscribe method
    */
-  subscribe?<T = unknown>(subscription: string, options?: SubscriptionOptions): { unsubscribe: () => void };
+  subscribe?<T = unknown>(subscription: string, options?: SubscriptionOptions): { unsubscribe: () => void }
 
   /**
    * Get data from a table
@@ -38,14 +38,14 @@ export interface DatabaseInterface {
   get?<T = unknown>(
     tableName: string,
     options: {
-      select: string | string[] | Record<string, unknown>;
-      where?: WhereClause;
-      limit?: number;
-      offset?: number;
-      orderBy?: OrderByClause | OrderByClause[];
-      aggregate?: string;
+      select: string | string[] | Record<string, unknown>
+      where?: WhereClause
+      limit?: number
+      offset?: number
+      orderBy?: OrderByClause | OrderByClause[]
+      aggregate?: string
     }
-  ): Promise<T>;
+  ): Promise<T>
 
   /**
    * Insert data into a table
@@ -60,7 +60,7 @@ export interface DatabaseInterface {
     data: Record<string, unknown> | Record<string, unknown>[],
     onConflict?: OnConflictClause | null,
     returning?: string | string[]
-  ): Promise<T>;
+  ): Promise<T>
 
   /**
    * Update data in a table
@@ -75,7 +75,7 @@ export interface DatabaseInterface {
     data: Record<string, unknown>,
     where: WhereClause,
     returning?: string | string[]
-  ): Promise<T>;
+  ): Promise<T>
 
   /**
    * Update multiple records in a table
@@ -86,9 +86,9 @@ export interface DatabaseInterface {
    */
   updateMany?<T = unknown>(
     tableName: string,
-    data: Array<{ data: Record<string, unknown>; where: WhereClause }>,
+    data: Array<{ data: Record<string, unknown> | Record<string, unknown>[], where: WhereClause }>,
     returning?: string | string[]
-  ): Promise<T>;
+  ): Promise<T>
 
   /**
    * Delete data from a table
@@ -101,106 +101,106 @@ export interface DatabaseInterface {
     tableName: string,
     where: WhereClause,
     returning?: string | string[]
-  ): Promise<T>;
+  ): Promise<T>
 
   /**
    * Execute a batch of operations
    * @param operations Array of operations
    * @returns Batch result
    */
-  batch?<T = unknown>(operations: BatchOperation[]): Promise<T>;
+  batch?<T = unknown>(operations: BatchOperation[]): Promise<T>
 
   /**
    * Set headers for all subsequent requests
    * @param headers Headers to set
    */
-  setHeaders?(headers: Record<string, string>): void;
+  setHeaders?(headers: Record<string, string>): void
 
   /**
    * Add a single header for all subsequent requests
    * @param key Header key
    * @param value Header value
    */
-  setHeader?(key: string, value: string): void;
+  setHeader?(key: string, value: string): void
 }
 
 /**
  * Options for query operations
  */
 export interface QueryOptions {
-  variables?: Record<string, unknown>;
-  headers?: Record<string, string>;
+  variables?: Record<string, unknown>
+  headers?: Record<string, string>
 }
 
 /**
  * Options for subscription operations
  */
 export interface SubscriptionOptions extends QueryOptions {
-  onData?: (data: unknown) => void;
-  onError?: (error: unknown) => void;
+  onData?: (data: unknown) => void
+  onError?: (error: unknown) => void
 }
 
 /**
  * Interface for where clauses in GraphQL queries
  */
 export interface WhereClause {
-  [key: string]: unknown;
-  _and?: WhereClause[];
-  _or?: WhereClause[];
-  _not?: WhereClause[];
-  _eq?: unknown;
-  _neq?: unknown;
-  _gt?: unknown;
-  _lt?: unknown;
-  _gte?: unknown;
-  _lte?: unknown;
-  _in?: unknown[];
-  _nin?: unknown[];
-  _like?: string;
-  _ilike?: string;
-  _is_null?: boolean;
+  [key: string]: unknown
+  _and?: WhereClause[]
+  _or?: WhereClause[]
+  _not?: WhereClause[]
+  _eq?: unknown
+  _neq?: unknown
+  _gt?: unknown
+  _lt?: unknown
+  _gte?: unknown
+  _lte?: unknown
+  _in?: unknown[]
+  _nin?: unknown[]
+  _like?: string
+  _ilike?: string
+  _is_null?: boolean
 }
 
 /**
  * Interface for order by clauses in GraphQL queries
  */
 export interface OrderByClause {
-  [key: string]: 'asc' | 'desc' | 'asc_nulls_first' | 'asc_nulls_last' | 'desc_nulls_first' | 'desc_nulls_last';
+  [key: string]: 'asc' | 'desc' | 'asc_nulls_first' | 'asc_nulls_last' | 'desc_nulls_first' | 'desc_nulls_last'
 }
 
 /**
  * Interface for on conflict clauses in GraphQL mutations
  */
 export interface OnConflictClause {
-  constraint: string;
-  update_columns: string[];
-  where?: WhereClause;
+  constraint: string
+  update_columns: string[]
+  where?: WhereClause
 }
 
 /**
  * Interface for batch operations
  */
 export interface BatchOperation {
-  type: 'insert' | 'update' | 'delete';
-  table: string;
-  data?: Record<string, unknown> | Record<string, unknown>[];
-  where?: WhereClause;
-  onConflict?: OnConflictClause;
-  returning?: string;
-  alias?: string;
+  type: 'insert' | 'update' | 'delete'
+  table: string
+  data?: Record<string, unknown> | Record<string, unknown>[]
+  where?: WhereClause
+  onConflict?: OnConflictClause
+  returning?: string
+  alias?: string
 }
 
 /**
  * Options for database connection
  */
 export interface DBConnectOptions {
-  dataOrigin: 'hasura' | 'prisma';
+  dataOrigin: 'hasura' | 'prisma'
   hasura?: {
-    url: string;
-    wsUrl?: string;
-    headers?: Record<string, string>;
-  };
-  prisma?: Record<string, unknown>;
-  dataDebug?: boolean;
-  metaData?: Record<string, unknown>;
+    url: string
+    wsUrl?: string
+    headers?: Record<string, string>
+  }
+  prisma?: Record<string, unknown>
+  dataDebug?: boolean
+  metaData?: Record<string, unknown>
 }

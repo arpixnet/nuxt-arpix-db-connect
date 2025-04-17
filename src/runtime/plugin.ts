@@ -1,5 +1,6 @@
-import { defineNuxtPlugin, useRuntimeConfig } from '#app'
-import { DatabaseFactory, DatabaseInterface, DBConnectOptions } from './database'
+import { defineNuxtPlugin, useRuntimeConfig } from 'nuxt/app'
+import type { DatabaseInterface, DBConnectOptions } from './database'
+import { DatabaseFactory } from './database'
 
 export default defineNuxtPlugin((nuxtApp) => {
   const config = useRuntimeConfig()
@@ -17,7 +18,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 
   return {
     provide: {
-      dbConnect: connector
-    }
+      dbConnect: connector,
+    },
   }
 })
