@@ -27,7 +27,7 @@ export interface DatabaseInterface {
    * @param options Subscription options
    * @returns Subscription object with unsubscribe method
    */
-  subscribe?<T = unknown>(subscription: string, options?: SubscriptionOptions): { unsubscribe: () => void }
+  subscribe?(subscription: string, options?: SubscriptionOptions): { unsubscribe: () => void }
 
   /**
    * Get data from a table

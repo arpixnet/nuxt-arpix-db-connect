@@ -114,6 +114,7 @@ export class GraphQLService {
       const headers = { ...this.headers, Authorization: `Bearer ${token}` }
       // Create a new client with the same URL
       // We need to extract the URL from the client
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const url = (this.client as any).url || (this.client as any).endpoint
       return new GraphQLClient(url, { headers })
     }
@@ -145,7 +146,7 @@ export class GraphQLService {
 
       // GraphQL error
       if (typeof error === 'object' && error !== null && 'response' in error && error.response && typeof error.response === 'object' && 'errors' in error.response) {
-        const gqlError = error.response?.errors?.[0]
+        const gqlError = error.response?.errors && Array.isArray(error.response.errors) ? error.response.errors[0] : null
 
         if (typeof gqlError === 'object' && gqlError !== null) {
           // Check for permission errors
