@@ -4,11 +4,11 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-03-30',
 
   dbConnect: {
-    dataOrigin: (process.env.DATA_ORIGIN === 'hasura' || process.env.DATA_ORIGIN === 'prisma')
-      ? process.env.DATA_ORIGIN
-      : 'prisma',
     hasura: {
-      url: process.env.HASURA_URL || '',
+      url: process.env.HASURA_URL || 'http://localhost:8080/v1/graphql',
+      headers: {
+        'x-hasura-admin-secret': process.env.HASURA_ADMIN_SECRET || 'your-admin-secret',
+      },
     },
     dataDebug: process.env.HASURA_DEBUG === 'true',
   },
