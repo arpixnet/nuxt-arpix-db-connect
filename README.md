@@ -3,11 +3,11 @@
 [![npm version][npm-version-src]][npm-version-href]
 [![npm downloads][npm-downloads-src]][npm-downloads-href]
 [![License][license-src]][license-href]
-[![Nuxt][nuxt-src]][nuxt-href]
+[![Nuxt](https://img.shields.io/badge/Nuxt-020420?logo=nuxt.js)](https://nuxt.com)
 
 A flexible database connection module for Nuxt 3 applications, providing a clean interface for Hasura GraphQL API.
 
-- [✨ &nbsp;Release Notes](/CHANGELOG.md)
+<!-- - [✨ &nbsp;Release Notes](/CHANGELOG.md) -->
 <!-- - [🏀 Online playground](https://stackblitz.com/github/arpixnet/nuxt-arpix-db-connect?file=playground%2Fapp.vue) -->
 <!-- - [📖 &nbsp;Documentation](https://example.com) -->
 
@@ -25,16 +25,16 @@ A flexible database connection module for Nuxt 3 applications, providing a clean
 Install the module to your Nuxt application:
 
 ```bash
-npm install @arpix/nuxt-arpix-db-connect
+npm install nuxt-arpix-db-connect
 # or
-yarn add @arpix/nuxt-arpix-db-connect
+yarn add nuxt-arpix-db-connect
 ```
 
 Add the module to your `nuxt.config.ts` file:
 
 ```ts
 export default defineNuxtConfig({
-  modules: ['@arpix/nuxt-arpix-db-connect'],
+  modules: ['nuxt-arpix-db-connect'],
   dbConnect: {
     dataOrigin: 'hasura',
     hasura: {
@@ -46,11 +46,6 @@ export default defineNuxtConfig({
       }
     },
     dataDebug: false, // Set to true for debugging
-    metaData: {
-      // Any additional metadata you want to include
-      appName: 'My Nuxt App',
-      version: '1.0.0'
-    }
   }
 })
 ```
@@ -327,7 +322,6 @@ const { data } = await $dbConnect.query(
 | `hasura.wsUrl` | `string` | - | Hasura WebSocket URL for subscriptions |
 | `hasura.headers` | `Record<string, string>` | `{}` | Headers to include in Hasura requests |
 | `dataDebug` | `boolean` | `false` | Enable debug logging |
-| `metaData` | `Record<string, any>` | `{}` | Additional metadata for the connection |
 
 ## API Reference
 
@@ -397,14 +391,14 @@ const { data } = await $dbConnect.query(
 
 
 <!-- Badges -->
-[npm-version-src]: https://img.shields.io/npm/v/@arpix/nuxt-arpix-db-connect/latest.svg?style=flat&colorA=020420&colorB=00DC82
-[npm-version-href]: https://npmjs.com/package/@arpix/nuxt-arpix-db-connect
+[npm-version-src]: https://img.shields.io/npm/v/nuxt-arpix-db-connect/latest.svg?style=flat&colorA=020420&colorB=00DC82
+[npm-version-href]: https://npmjs.com/package/nuxt-arpix-db-connect
 
-[npm-downloads-src]: https://img.shields.io/npm/dm/@arpix/nuxt-arpix-db-connect.svg?style=flat&colorA=020420&colorB=00DC82
-[npm-downloads-href]: https://npm.chart.dev/@arpix/nuxt-arpix-db-connect
+[npm-downloads-src]: https://img.shields.io/npm/dm/nuxt-arpix-db-connect.svg?style=flat&colorA=020420&colorB=00DC82
+[npm-downloads-href]: https://npm.chart.dev/nuxt-arpix-db-connect
 
-[license-src]: https://img.shields.io/npm/l/@arpix/nuxt-arpix-db-connect.svg?style=flat&colorA=020420&colorB=00DC82
-[license-href]: https://npmjs.com/package/@arpix/nuxt-arpix-db-connect
+[license-src]: https://img.shields.io/npm/l/nuxt-arpix-db-connect.svg?style=flat&colorA=020420&colorB=00DC82
+[license-href]: https://npmjs.com/package/nuxt-arpix-db-connect
 
 [nuxt-src]: https://img.shields.io/badge/Nuxt-020420?logo=nuxt.js
 [nuxt-href]: https://nuxt.com
