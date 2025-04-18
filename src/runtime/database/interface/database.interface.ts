@@ -236,13 +236,15 @@ export type BatchOperation =
  * Options for database connection
  */
 export interface DBConnectOptions {
-  dataOrigin: 'hasura' | 'prisma'
+  dataOrigin: 'hasura' | string
   hasura?: {
     url: string
     wsUrl?: string
     headers?: Record<string, string>
   }
-  prisma?: Record<string, unknown>
+  // Space for future integrations
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any
   dataDebug?: boolean
   metaData?: Record<string, unknown>
 }

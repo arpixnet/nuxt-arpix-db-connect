@@ -5,7 +5,7 @@
 [![License][license-src]][license-href]
 [![Nuxt][nuxt-src]][nuxt-href]
 
-A flexible database connection module for Nuxt 3 applications, supporting multiple data sources like Hasura, Prisma, and more.
+A flexible database connection module for Nuxt 3 applications, providing a clean interface for Hasura GraphQL API.
 
 - [✨ &nbsp;Release Notes](/CHANGELOG.md)
 <!-- - [🏀 Online playground](https://stackblitz.com/github/arpixnet/nuxt-arpix-db-connect?file=playground%2Fapp.vue) -->
@@ -13,7 +13,7 @@ A flexible database connection module for Nuxt 3 applications, supporting multip
 
 ## Features
 
-- 🔌 &nbsp;Configurable data source connections (Hasura, Prisma)
+- 🔌 &nbsp;Configurable Hasura GraphQL connection
 - 🚀 &nbsp;Easy GraphQL queries, mutations, and subscriptions
 - 📊 &nbsp;High-level database operations (get, insert, update, delete, batch)
 - 🔄 &nbsp;Real-time data with WebSocket support
@@ -36,7 +36,7 @@ Add the module to your `nuxt.config.ts` file:
 export default defineNuxtConfig({
   modules: ['@arpix/nuxt-arpix-db-connect'],
   dbConnect: {
-    dataOrigin: 'hasura', // or 'prisma'
+    dataOrigin: 'hasura',
     hasura: {
       url: 'https://your-hasura-endpoint.com/v1/graphql',
       wsUrl: 'wss://your-hasura-endpoint.com/v1/graphql', // Optional, for subscriptions
@@ -287,6 +287,12 @@ const deletedCategories = result.delete_category.affected_rows
 </script>
 ```
 
+### Future Integrations
+
+This module is designed to be extensible. While it currently only supports Hasura, it has been architected to allow for additional database connectors in the future.
+
+If you're interested in contributing or have suggestions for other database integrations, please open an issue or pull request on the GitHub repository.
+
 #### Setting Headers
 
 ```vue
@@ -316,7 +322,7 @@ const { data } = await $dbConnect.query(
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `dataOrigin` | `'hasura' \| 'prisma'` | `'hasura'` | The data source to use |
+| `dataOrigin` | `'hasura'` | `'hasura'` | The data source to use (currently only 'hasura' is supported) |
 | `hasura.url` | `string` | - | Hasura GraphQL endpoint URL |
 | `hasura.wsUrl` | `string` | - | Hasura WebSocket URL for subscriptions |
 | `hasura.headers` | `Record<string, string>` | `{}` | Headers to include in Hasura requests |
@@ -331,18 +337,18 @@ const { data } = await $dbConnect.query(
 |--------|------------|-------------|
 | `query` | `query: string, options?: { variables?: Record<string, any>, headers?: Record<string, string> }` | Execute a raw GraphQL query |
 | `mutate` | `mutation: string, options?: { variables?: Record<string, any>, headers?: Record<string, string> }` | Execute a raw GraphQL mutation |
-| `subscribe` | `subscription: string, options?: { variables?: Record<string, any>, headers?: Record<string, string>, onData?: (data: any) => void, onError?: (error: any) => void }` | Subscribe to real-time data (Hasura only) |
+| `subscribe` | `subscription: string, options?: { variables?: Record<string, any>, headers?: Record<string, string>, onData?: (data: any) => void, onError?: (error: any) => void }` | Subscribe to real-time data |
 
 ### High-Level Database Operations
 
 | Method | Parameters | Description |
 |--------|------------|-------------|
-| `get` | `tableName: string, options: { select: string \| string[] \| Record<string, any>, where?: WhereClause, limit?: number, offset?: number, orderBy?: OrderByClause \| OrderByClause[], aggregate?: string }` | Get data from a table with filtering, ordering, and pagination |
-| `insert` | `tableName: string, data: any \| any[], onConflict?: OnConflictClause \| null, returning?: string \| string[]` | Insert data into a table |
-| `update` | `tableName: string, data: any, where: WhereClause, returning?: string \| string[]` | Update data in a table |
-| `updateMany` | `tableName: string, data: Array<{ data: any, where: WhereClause }>, returning?: string \| string[]` | Update multiple records with different values |
-| `delete` | `tableName: string, where: WhereClause, returning?: string \| string[]` | Delete data from a table |
-| `batch` | `operations: BatchOperation[]` | Execute multiple operations in a single request |
+| `get` | `tableName: string, options: { select: string \| string[] \| Record<string, any>, where?: WhereClause, limit?: number, offset?: number, orderBy?: OrderByClause \| OrderByClause[], aggregate?: string }, token?: string` | Get data from a table with filtering, ordering, and pagination |
+| `insert` | `tableName: string, data: any \| any[], onConflict?: OnConflictClause \| null, returning?: string \| string[], token?: string` | Insert data into a table |
+| `update` | `tableName: string, data: any, where: WhereClause, returning?: string \| string[], token?: string` | Update data in a table |
+| `delete` | `tableName: string, where: WhereClause, returning?: string \| string[], token?: string` | Delete data from a table |
+| `updateMany` | `tableName: string, data: Array<{ data: any, where: WhereClause }>, returning?: string \| string[], token?: string` | Update multiple records with different values |
+| `batch` | `operations: BatchOperation[], token?: string` | Execute multiple operations in a single request |
 
 ### Header Management
 
@@ -350,6 +356,12 @@ const { data } = await $dbConnect.query(
 |--------|------------|-------------|
 | `setHeaders` | `headers: Record<string, string>` | Set headers for all subsequent requests |
 | `setHeader` | `key: string, value: string` | Add a single header for all subsequent requests |
+
+### Client Access
+
+| Method | Parameters | Description |
+|--------|------------|-------------|
+| `getClient` | `token?: string` | Get the native GraphQLClient instance |
 
 
 ## Contribution

@@ -7,5 +7,4 @@ export * from './factory/database-factory'
 // Export Hasura implementation
 export * from './hasura/graphql-service'
 
-// Export Prisma implementation
-export * from './prisma/prisma-connector'
+// Space for future implementations

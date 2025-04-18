@@ -1,6 +1,5 @@
 import type { DBConnectOptions } from '../interface/database.interface'
 import { useGraphQL } from '../hasura/graphql-service'
-import { PrismaConnector } from '../prisma/prisma-connector'
 
 /**
  * Factory class for creating database connectors
@@ -15,25 +14,20 @@ export class DatabaseFactory {
   static createConnector(options: DBConnectOptions) {
     const { dataOrigin, dataDebug } = options
 
-    switch (dataOrigin) {
-      case 'hasura':
-        if (!options.hasura?.url) {
-          throw new Error('Hasura URL is required when using Hasura as data origin')
-        }
-        return useGraphQL({
-          url: options.hasura.url,
-          wsUrl: options.hasura.wsUrl,
-          headers: options.hasura.headers,
-          debug: dataDebug,
-        })
-
-      case 'prisma':
-        return new PrismaConnector({
-          debug: dataDebug,
-        })
-
-      default:
-        throw new Error(`Unsupported data origin: ${dataOrigin}`)
+    // Currently only Hasura is supported
+    if (dataOrigin === 'hasura') {
+      if (!options.hasura?.url) {
+        throw new Error('Hasura URL is required when using Hasura as data origin')
+      }
+      return useGraphQL({
+        url: options.hasura.url,
+        wsUrl: options.hasura.wsUrl,
+        headers: options.hasura.headers,
+        debug: dataDebug,
+      })
     }
+
+    // For future integrations
+    throw new Error(`Unsupported data origin: ${dataOrigin}. Currently only 'hasura' is supported.`)
   }
 }

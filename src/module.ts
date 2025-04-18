@@ -10,17 +10,19 @@ export interface HasuraOptions {
   headers?: Record<string, string>
 }
 
-// Prisma specific options
-export interface PrismaOptions {
-  databaseUrl?: string
-  clientOptions?: Record<string, unknown>
+// Interface for future database connectors
+export interface GenericConnectorOptions {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any
 }
 
 // Module options TypeScript interface definition
 export interface ModuleOptions {
-  dataOrigin: 'hasura' | 'prisma'
+  dataOrigin: 'hasura' | string
   hasura?: HasuraOptions
-  prisma?: PrismaOptions
+  // Space for future integrations
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any
   dataDebug?: boolean
 }
 
@@ -36,14 +38,21 @@ export default defineNuxtModule<ModuleOptions>({
   defaults: {
     dataOrigin: 'hasura',
     dataDebug: false,
-    hasura: undefined,
+    hasura: {
+      url: 'http://localhost:8080/v1/graphql',
+    },
   },
   setup(options, nuxt) {
     const resolver = createResolver(import.meta.url)
 
     // 1. Validate essential configuration
     if (!options?.dataOrigin) {
-      throw new Error('Configuration is required when using Hasura or Prisma as data origin')
+      throw new Error('dataOrigin is required when using the database connector')
+    }
+
+    // Validate Hasura configuration if selected
+    if (options.dataOrigin === 'hasura' && !options.hasura?.url) {
+      throw new Error('Hasura URL is required when using Hasura as data origin')
     }
 
     // 2. Make options available in runtime
