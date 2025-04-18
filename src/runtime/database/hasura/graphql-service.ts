@@ -207,15 +207,24 @@ export class PermissionDeniedError extends GraphQLServiceError {
 class GraphQLService implements IGraphQLService {
   private url: string
   private debug: boolean
+  private defaultHeaders: Record<string, string>
 
-  constructor(url: string, debug: boolean = false) {
-    this.url = url
-    this.debug = debug
+  constructor(options: {
+    url: string
+    debug?: boolean
+    headers?: Record<string, string>
+  }) {
+    this.url = options.url
+    this.debug = options.debug || false
+    this.defaultHeaders = {
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    }
   }
 
   getClient(token?: string): GraphQLClient {
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      ...this.defaultHeaders,
     }
 
     if (token) {
@@ -426,6 +435,10 @@ class GraphQLService implements IGraphQLService {
 }
 
 export const useGraphQL = (options: Record<string, unknown>): IGraphQLService => {
-  const graphqlService = new GraphQLService(options.url as string, options.debug as boolean || false)
+  const graphqlService = new GraphQLService({
+    url: options.url as string,
+    debug: options.debug as boolean || false,
+    headers: options.headers as Record<string, string> || {},
+  })
   return graphqlService
 }
