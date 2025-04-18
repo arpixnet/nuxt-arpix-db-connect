@@ -1,6 +1,12 @@
 import * as dbConnect from '../database'
 import { useRuntimeConfig } from '#imports'
 
-export function useDbConnector(): dbConnect.IGraphQLService {
-  return dbConnect.DatabaseFactory.createConnector(useRuntimeConfig().dbConnect) as dbConnect.IGraphQLService
+export function useDbConnector() {
+  const config = useRuntimeConfig().dbConnect
+  const connector = dbConnect.DatabaseFactory.createConnector(config)
+
+  if (config.dataOrigin === 'hasura') {
+    return connector as dbConnect.IGraphQLService
+  }
+  return connector as dbConnect.DatabaseInterface
 }
