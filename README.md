@@ -25,6 +25,10 @@ A flexible database connection module for Nuxt 3 applications, providing a clean
 Install the module to your Nuxt application:
 
 ```bash
+# Using Nuxt CLI (recommended)
+npx nuxi module add nuxt-arpix-db-connect
+
+# Or using npm/yarn
 npm install nuxt-arpix-db-connect
 # or
 yarn add nuxt-arpix-db-connect
