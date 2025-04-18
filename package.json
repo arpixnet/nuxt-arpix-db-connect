@@ -1,6 +1,6 @@
 {
   "name": "nuxt-arpix-db-connect",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Nuxt module for DB Connect",
   "repository": {
     "type": "git",
