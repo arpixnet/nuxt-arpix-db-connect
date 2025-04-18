@@ -1,24 +1,5 @@
-import { defineNuxtPlugin, useRuntimeConfig } from 'nuxt/app'
-import type { DatabaseInterface, DBConnectOptions } from './database'
-import { DatabaseFactory } from './database'
+import { defineNuxtPlugin } from 'nuxt/app'
 
-export default defineNuxtPlugin((nuxtApp) => {
-  const config = useRuntimeConfig()
-  const options = config.public.dbConnect as DBConnectOptions
-
-  // Create the appropriate connector based on configuration
-  const connector: DatabaseInterface = DatabaseFactory.createConnector(options)
-
-  if (options.dataDebug) {
-    console.log('DB Connect plugin initialized with options:', options)
-  }
-
-  // Provide the connector to the app
-  nuxtApp.provide('dbConnect', connector)
-
-  return {
-    provide: {
-      dbConnect: connector,
-    },
-  }
+export default defineNuxtPlugin((_nuxtApp) => {
+  console.log('Plugin injected by nuxt-arpix-db-connect!')
 })

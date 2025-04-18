@@ -1,15 +1,15 @@
-import { defineNuxtConfig } from 'nuxt/config'
-
 export default defineNuxtConfig({
-  modules: ['@arpix/nuxt-arpix-db-connect'],
+  modules: ['../src/module'],
   devtools: { enabled: true },
-  compatibilityDate: '2025-04-17',
+  compatibilityDate: '2025-03-30',
 
   dbConnect: {
-    dataOrigin: 'hasura',
+    dataOrigin: (process.env.DATA_ORIGIN === 'hasura' || process.env.DATA_ORIGIN === 'prisma')
+      ? process.env.DATA_ORIGIN
+      : 'prisma',
     hasura: {
-      url: 'https://your-hasura-endpoint.com/v1/graphql',
+      url: process.env.HASURA_URL || '',
     },
-    dataDebug: true,
+    dataDebug: process.env.HASURA_DEBUG === 'true',
   },
 })

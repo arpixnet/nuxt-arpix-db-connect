@@ -1,5 +1,5 @@
-import type { DatabaseInterface, DBConnectOptions } from '../interface/database.interface'
-import { HasuraConnector } from '../hasura/hasura-connector'
+import type { DBConnectOptions } from '../interface/database.interface'
+import { useGraphQL } from '../hasura/graphql-service'
 import { PrismaConnector } from '../prisma/prisma-connector'
 
 /**
@@ -12,7 +12,7 @@ export class DatabaseFactory {
    * @param options Database connection options
    * @returns Database connector instance
    */
-  static createConnector(options: DBConnectOptions): DatabaseInterface {
+  static createConnector(options: DBConnectOptions) {
     const { dataOrigin, dataDebug } = options
 
     switch (dataOrigin) {
@@ -20,7 +20,7 @@ export class DatabaseFactory {
         if (!options.hasura?.url) {
           throw new Error('Hasura URL is required when using Hasura as data origin')
         }
-        return new HasuraConnector({
+        return useGraphQL({
           url: options.hasura.url,
           wsUrl: options.hasura.wsUrl,
           headers: options.hasura.headers,

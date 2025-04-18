@@ -8,6 +8,8 @@
     "generate": "nuxi generate"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "jose": "^6.0.10",
     "nuxt": "^3.16.2"
   }
 }

@@ -2,23 +2,20 @@
   "name": "@arpix/nuxt-arpix-db-connect",
   "version": "1.0.0",
   "description": "Nuxt module for DB Connect",
-  "repository": "https://github.com/arpixnet/nuxt-arpix-db-connect",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arpixnet/nuxt-arpix-db-connect"
+  },
   "license": "MIT",
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/types.d.mts",
-      "import": "./dist/module.mjs"
+      "types": "./dist/types.d.ts",
+      "import": "./dist/module.mjs",
+      "require": "./dist/module.cjs"
     }
   },
-  "main": "./dist/module.mjs",
-  "typesVersions": {
-    "*": {
-      ".": [
-        "./dist/types.d.mts"
-      ]
-    }
-  },
+  "main": "./dist/module.cjs",
   "files": [
     "dist"
   ],

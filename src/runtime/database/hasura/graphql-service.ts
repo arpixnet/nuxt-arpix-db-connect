@@ -1,592 +1,381 @@
 import { GraphQLClient, gql } from 'graphql-request'
-import type {
-  WhereClause,
-  OrderByClause,
-  OnConflictClause,
-  BatchOperation,
-} from '../interface/database.interface'
 
-/**
- * GraphQL Service Error class
- */
-export class GraphQLServiceError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'GraphQLServiceError'
-  }
+export interface IGraphQLService {
+    get: typeof GraphQLService.prototype.get
+    insert: typeof GraphQLService.prototype.insert
+    update: typeof GraphQLService.prototype.update
+    updateMany: typeof GraphQLService.prototype.updateMany
+    delete: typeof GraphQLService.prototype.delete
+    batch: typeof GraphQLService.prototype.batch // En prueba de implementación
+    getClient: typeof GraphQLService.prototype.getClient
 }
 
-/**
- * Network Error class
- */
-export class NetworkError extends GraphQLServiceError {
-  constructor(message: string) {
-    super(message)
-    this.name = 'NetworkError'
-  }
+interface WhereClause {
+    [key: string]: any
+    _and?: WhereClause[]
+    _or?: WhereClause[]
+    _not?: WhereClause[]
 }
 
-/**
- * GraphQL Error class
- */
-export class GraphQLError extends GraphQLServiceError {
-  details?: unknown
-
-  constructor(message: string) {
-    super(message)
-    this.name = 'GraphQLError'
-  }
-}
-
-/**
- * Validation Error class
- */
-export class ValidationError extends GraphQLServiceError {
-  constructor(message: string) {
-    super(message)
-    this.name = 'ValidationError'
-  }
-}
-
-/**
- * Permission Denied Error class
- */
-export class PermissionDeniedError extends GraphQLServiceError {
-  constructor(message: string) {
-    super(message)
-    this.name = 'PermissionDeniedError'
-  }
-}
-
-/**
- * GraphQL Service class for interacting with GraphQL APIs
- */
-export class GraphQLService {
-  private client: GraphQLClient
-  private debug: boolean
-  private headers: Record<string, string>
-
-  /**
-   * Create a new GraphQLService instance
-   * @param url GraphQL endpoint URL
-   * @param headers Optional headers to include in all requests
-   * @param debug Whether to enable debug logging
-   */
-  constructor(url: string, headers: Record<string, string> = {}, debug: boolean = false) {
-    this.headers = { ...headers }
-    this.client = new GraphQLClient(url, { headers: this.headers })
-    this.debug = debug
-
-    if (this.debug) {
-      console.log('GraphQLService initialized with:', {
-        url,
-        headers: Object.keys(headers),
-      })
+type BatchOperation =
+  | {
+      type: 'insert'
+      table: string
+      data: any
+      onConflict?: any
+      returning?: string
     }
-  }
-
-  /**
-   * Set headers for the GraphQL client
-   * @param headers Headers to set
-   */
-  setHeaders(headers: Record<string, string>): void {
-    this.headers = { ...headers }
-    this.client.setHeaders(this.headers)
-  }
-
-  /**
-   * Add a single header to the GraphQL client
-   * @param key Header key
-   * @param value Header value
-   */
-  setHeader(key: string, value: string): void {
-    this.headers[key] = value
-    this.client.setHeader(key, value)
-  }
-
-  /**
-   * Get the GraphQL client with optional token
-   * @param token Optional authentication token
-   * @returns GraphQL client
-   */
-  getClient(token?: string): GraphQLClient {
-    if (token) {
-      const headers = { ...this.headers, Authorization: `Bearer ${token}` }
-      // Create a new client with the same URL
-      // We need to extract the URL from the client
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const url = (this.client as any).url || (this.client as any).endpoint
-      return new GraphQLClient(url, { headers })
+  | {
+      type: 'update'
+      table: string
+      data: any
+      where: any
+      returning?: string
     }
-    return this.client
-  }
-
-  /**
-   * Handle GraphQL request errors
-   * @param requestFn Function that makes the GraphQL request
-   * @returns The result of the request
-   */
-  private async handleRequest<T>(requestFn: () => Promise<T>): Promise<T> {
-    try {
-      const result = await requestFn()
-      if (this.debug) {
-        console.log('GraphQL operation successful:', result)
-      }
-      return result
-    }
-    catch (error: unknown) {
-      if (this.debug) {
-        console.error('GraphQL operation failed:', error)
-      }
-
-      // Network error
-      if (error instanceof Error && error.message.includes('Network')) {
-        throw new NetworkError('Network error occurred')
-      }
-
-      // GraphQL error
-      if (typeof error === 'object' && error !== null && 'response' in error && error.response && typeof error.response === 'object' && 'errors' in error.response) {
-        const gqlError = error.response?.errors && Array.isArray(error.response.errors) ? error.response.errors[0] : null
-
-        if (typeof gqlError === 'object' && gqlError !== null) {
-          // Check for permission errors
-          if ('extensions' in gqlError && typeof gqlError.extensions === 'object' && gqlError.extensions !== null) {
-            const extensions = gqlError.extensions
-            if ('code' in extensions) {
-              const code = extensions.code
-              if (code === 'permission-denied') {
-                throw new PermissionDeniedError('Permission denied')
-              }
-              if (code === 'invalid-jwt') {
-                throw new PermissionDeniedError('Invalid authentication token')
-              }
-            }
-          }
-
-          // Get error message
-          const message = 'message' in gqlError && typeof gqlError.message === 'string'
-            ? gqlError.message
-            : 'GraphQL operation failed'
-
-          const graphqlError = new GraphQLError(message)
-          graphqlError.details = gqlError
-          throw graphqlError
-        }
-
-        throw new GraphQLError('GraphQL operation failed')
-      }
-
-      // Validation error
-      if (error instanceof GraphQLServiceError) {
-        throw error
-      }
-
-      // Unexpected error
-      const errorMessage = typeof error === 'object' && error !== null && 'message' in error
-        ? String(error.message)
-        : 'Unexpected error'
-
-      throw new GraphQLServiceError(errorMessage)
-    }
-  }
-
-  /**
-   * Execute a raw GraphQL query
-   * @param query GraphQL query string
-   * @param variables Optional variables for the query
-   * @returns Query result
-   */
-  async query<T = unknown>(query: string, variables?: Record<string, unknown>): Promise<T> {
-    if (this.debug) {
-      console.log('GraphQL query:', query, variables)
+  | {
+      type: 'delete'
+      table: string
+      where: any
+      returning?: string
     }
 
-    return this.handleRequest(async () => {
-      const result = await this.client.request<T>(gql`${query}`, variables)
-
-      if (this.debug) {
-        console.log('GraphQL query result:', result)
-      }
-
-      return result
-    })
-  }
-
-  /**
-   * Execute a raw GraphQL mutation
-   * @param mutation GraphQL mutation string
-   * @param variables Optional variables for the mutation
-   * @returns Mutation result
-   */
-  async mutate<T = unknown>(mutation: string, variables?: Record<string, unknown>): Promise<T> {
-    if (this.debug) {
-      console.log('GraphQL mutation:', mutation, variables)
-    }
-
-    return this.handleRequest(async () => {
-      const result = await this.client.request<T>(gql`${mutation}`, variables)
-
-      if (this.debug) {
-        console.log('GraphQL mutation result:', result)
-      }
-
-      return result
-    })
-  }
-
-  /**
-   * Get data from a table
-   * @param tableName Table name
-   * @param options Query options
-   * @param options.select Fields to select (string, array of strings, or object)
-   * @param options.where Where clause for filtering
-   * @param options.limit Maximum number of records to return
-   * @param options.offset Number of records to skip
-   * @param options.orderBy Order by clause
-   * @param options.aggregate Aggregate function to apply
-   * @returns Query result
-   */
-  async get<T = unknown>(
+const createQuery = (
     tableName: string,
-    options: {
-      select: string | string[] | Record<string, unknown>
-      where?: WhereClause
-      limit?: number
-      offset?: number
-      orderBy?: OrderByClause | OrderByClause[]
-      aggregate?: string
-    },
-  ): Promise<T> {
-    const { select, where, limit, offset, orderBy, aggregate } = options
+    select: string,
+    where: WhereClause | null = null,
+    limit: number | null = null,
+    offset: number | null = null,
+    orderBy: any = null,
+    aggregate: any = null
+): string => {
+    const args = []
+    if (where) args.push(`where: ${JSON.stringify(where).replace(/"([^"]+)":/g, '$1:')}`)
+    if (limit) args.push(`limit: ${limit}`)
+    if (offset) args.push(`offset: ${offset}`)
+    if (orderBy) args.push(`order_by: ${JSON.stringify(orderBy).replace(/"([^"]+)":\s*"([^"]+)"/g, '$1: $2')}`)
 
-    // Convert select to string if it's an array
-    let selectStr = select
-    if (Array.isArray(select)) {
-      selectStr = select.join(' ')
-    }
-    else if (typeof select === 'object') {
-      selectStr = this.objectToGraphQLSelection(select)
-    }
+    let fields = `${tableName}${args.length ? `(${args.join(", ")})` : ''} { ${select} }`
 
-    // Build the query
-    let query = `query {
-      ${tableName}`
-
-    // Add where clause
-    if (where) {
-      query += `(where: ${this.objectToGraphQLParams(where)})`
-    }
-
-    // Add limit
-    if (limit !== undefined) {
-      query += `${where ? '' : '('}limit: ${limit}${where ? '' : ')'}`
-    }
-
-    // Add offset
-    if (offset !== undefined) {
-      query += `${where || limit ? '' : '('}offset: ${offset}${where || limit ? '' : ')'}`
-    }
-
-    // Add order by
-    if (orderBy) {
-      const orderByStr = Array.isArray(orderBy)
-        ? `[${orderBy.map(o => this.objectToGraphQLParams(o)).join(', ')}]`
-        : this.objectToGraphQLParams(orderBy)
-
-      query += `${where || limit || offset ? '' : '('}order_by: ${orderByStr}${where || limit || offset ? '' : ')'}`
-    }
-
-    // Close parameters if needed
-    if ((where && (limit || offset || orderBy)) || (!where && limit && (offset || orderBy)) || (!where && !limit && offset && orderBy)) {
-      query += ')'
-    }
-
-    // Add selection
     if (aggregate) {
-      query += ` {
-        aggregate {
-          ${aggregate}
-        }
-      }`
-    }
-    else {
-      query += ` {
-        ${selectStr}
-      }`
+        fields += `
+            ${tableName}_aggregate${args.length ? `(${args.join(", ")})` : ''} {
+                ${aggregate}
+            }
+        `
     }
 
-    // Close the query
-    query += `
-    }`
+    return `query { ${fields} }`
+}
 
-    return this.query<T>(query)
-  }
-
-  /**
-   * Insert data into a table
-   * @param tableName Table name
-   * @param data Data to insert (object or array of objects)
-   * @param onConflict On conflict clause
-   * @param returning Fields to return
-   * @returns Mutation result
-   */
-  async insert<T = unknown>(
+const createInsertMutation = (
     tableName: string,
-    data: Record<string, unknown> | Record<string, unknown>[],
-    onConflict: OnConflictClause | null = null,
-    returning: string | string[] = 'affected_rows',
-  ): Promise<T> {
-    // Validate data
-    if (!data) {
-      throw new ValidationError('Data is required for insert operation')
-    }
+    data: any,
+    onConflict: any = null,
+    returning: string = 'affected_rows'
+): string => {
+    if (!data) throw new Error('error.insertMissingData')
+    if (!Array.isArray(data)) data = [data]
+    if (data.length === 0) throw new Error('error.insertMissingData')
 
-    // Convert returning to string if it's an array
-    if (Array.isArray(returning)) {
-      returning = returning.join(' ')
-    }
+    const args = [`objects: ${JSON.stringify(data).replace(/"([^"]+)":/g, '$1:')}`]
 
-    // Build the mutation
-    let mutation = `mutation {
-      insert_${tableName}(`
-
-    // Add objects
-    mutation += `objects: ${this.objectToGraphQLParams(Array.isArray(data) ? data : [data])}`
-
-    // Add on_conflict
     if (onConflict) {
-      mutation += `, on_conflict: {
-        constraint: ${onConflict.constraint},
-        update_columns: [${onConflict.update_columns.map(c => c).join(', ')}]`
-
-      if (onConflict.where) {
-        mutation += `,
-        where: ${this.objectToGraphQLParams(onConflict.where)}`
-      }
-
-      mutation += `
-      }`
+        args.push(`on_conflict: ${JSON.stringify(onConflict).replace(/"(\w+)":/g, '$1:').replace(/"(\w+)"(?=\s*[,}\]])/g, '$1')}`)
     }
 
-    // Close parameters and add returning
-    mutation += `) {
-      ${returning}
-    }
-    }`
+    return `
+        mutation {
+            insert_${tableName}(${args.join(", ")}) {
+                ${returning}
+            }
+        }
+    `
+}
 
-    return this.mutate<T>(mutation)
-  }
-
-  /**
-   * Update data in a table
-   * @param tableName Table name
-   * @param data Data to update
-   * @param where Where clause
-   * @param returning Fields to return
-   * @returns Mutation result
-   */
-  async update<T = unknown>(
+const createUpdateMutation = (
     tableName: string,
-    data: Record<string, unknown>,
+    data: any,
     where: WhereClause,
-    returning: string | string[] = 'affected_rows',
-  ): Promise<T> {
-    // Validate data and where
-    if (!data || Object.keys(data).length === 0) {
-      throw new ValidationError('Data is required for update operation')
-    }
+    returning: string = 'affected_rows'
+): string => {
+    return `
+        mutation {
+            update_${tableName}(
+                where: ${JSON.stringify(where).replace(/"([^"]+)":/g, '$1:')},
+                _set: ${JSON.stringify(data).replace(/"([^"]+)":/g, '$1:')}
+            ) {
+                ${returning}
+            }
+        }
+    `
+}
 
-    if (!where || Object.keys(where).length === 0) {
-      throw new ValidationError('Where clause is required for update operation')
-    }
-
-    // Convert returning to string if it's an array
-    if (Array.isArray(returning)) {
-      returning = returning.join(' ')
-    }
-
-    // Build the mutation
-    const mutation = `mutation {
-      update_${tableName}(
-        _set: ${this.objectToGraphQLParams(data)},
-        where: ${this.objectToGraphQLParams(where)}
-      ) {
-        ${returning}
-      }
-    }`
-
-    return this.mutate<T>(mutation)
-  }
-
-  /**
-   * Update multiple records in a table
-   * @param tableName Table name
-   * @param data Array of objects with data and where clause
-   * @param returning Fields to return
-   * @returns Mutation result
-   */
-  async updateMany<T = unknown>(
+const createUpdateManyMutation = (
     tableName: string,
-    data: Array<{ data: Record<string, unknown>, where: WhereClause }>,
-    returning: string | string[] = 'affected_rows',
-  ): Promise<T> {
-    // Validate data
-    if (!data || data.length === 0) {
-      throw new ValidationError('Data is required for updateMany operation')
-    }
+    updates: { where: WhereClause; _set: any }[],
+    returning: string = 'affected_rows',
+): string => {
+    const updatesFormatted = updates.map(update => `{
+        where: ${JSON.stringify(update.where).replace(/"([^\"]+)":/g, '$1:')},
+        _set: ${JSON.stringify(update._set).replace(/"([^\"]+)":/g, '$1:')}
+    }`).join(', ')
 
-    // Convert returning to string if it's an array
-    if (Array.isArray(returning)) {
-      returning = returning.join(' ')
-    }
+    return `
+        mutation {
+            update_${tableName}_many(updates: [${updatesFormatted}]) {
+                ${returning}
+            }
+        }
+    `
+}
 
-    // Create batch operations
-    const operations: BatchOperation[] = data.map((item, index) => ({
-      type: 'update',
-      table: tableName,
-      data: item.data,
-      where: item.where,
-      returning,
-      alias: `update_${index}`,
-    }))
-
-    return this.batch<T>(operations)
-  }
-
-  /**
-   * Delete data from a table
-   * @param tableName Table name
-   * @param where Where clause
-   * @param returning Fields to return
-   * @returns Mutation result
-   */
-  async delete<T = unknown>(
+const createDeleteMutation = (
     tableName: string,
     where: WhereClause,
-    returning: string | string[] = 'affected_rows',
-  ): Promise<T> {
-    // Validate where
-    if (!where || Object.keys(where).length === 0) {
-      throw new ValidationError('Where clause is required for delete operation')
-    }
-
-    // Convert returning to string if it's an array
-    if (Array.isArray(returning)) {
-      returning = returning.join(' ')
-    }
-
-    // Build the mutation
-    const mutation = `mutation {
-      delete_${tableName}(
-        where: ${this.objectToGraphQLParams(where)}
-      ) {
-        ${returning}
-      }
-    }`
-
-    return this.mutate<T>(mutation)
-  }
-
-  /**
-   * Execute a batch of operations
-   * @param operations Array of operations
-   * @returns Batch result
-   */
-  async batch<T = unknown>(operations: BatchOperation[]): Promise<T> {
-    if (!operations.length) {
-      throw new ValidationError('No operations provided for batch')
-    }
-
-    const mutations = operations.map((op) => {
-      const alias = op.alias || `${op.type}_${op.table}`
-
-      switch (op.type) {
-        case 'insert':
-          return `
-            ${alias}: insert_${op.table}(
-              objects: ${this.objectToGraphQLParams(Array.isArray(op.data) ? op.data : [op.data])},
-              ${op.onConflict
-                ? `on_conflict: {
-                    constraint: ${op.onConflict.constraint},
-                    update_columns: [${op.onConflict.update_columns.map(c => c).join(', ')}]
-                    ${op.onConflict.where ? `, where: ${this.objectToGraphQLParams(op.onConflict.where)}` : ''}
-                  }`
-                : ''}
-            ) {
-              ${op.returning || 'affected_rows'}
+    returning: string = 'affected_rows',
+): string => {
+    return `
+        mutation {
+            delete_${tableName}(where: ${JSON.stringify(where).replace(/"([^"]+)":/g, '$1:')}) {
+                ${returning}
             }
-          `
-        case 'update':
-          return `
-            ${alias}: update_${op.table}(
-              _set: ${this.objectToGraphQLParams(op.data)},
-              where: ${this.objectToGraphQLParams(op.where)}
-            ) {
-              ${op.returning || 'affected_rows'}
+        }
+    `
+}
+
+export class GraphQLServiceError extends Error {
+    constructor(message: string) {
+        super(message)
+        this.name = 'GraphQLServiceError'
+    }
+}
+
+export class NetworkError extends GraphQLServiceError {
+    constructor(message: string) {
+        super(message)
+        this.name = 'NetworkError'
+    }
+}
+
+export class GraphQLError extends GraphQLServiceError {
+    details: any
+
+    constructor(message: string) {
+        super(message)
+        this.name = 'GraphQLError'
+    }
+}
+
+export class ValidationError extends GraphQLServiceError {
+    constructor(message: string) {
+        super(message)
+        this.name = 'ValidationError'
+    }
+}
+
+export class PermissionDeniedError extends GraphQLServiceError {
+    constructor(message: string) {
+        super(message)
+        this.name = 'PermissionDeniedError'
+    }
+}
+
+class GraphQLService {
+    private url: string
+    private debug: boolean
+
+    constructor(url: string, debug: boolean = false) {
+        this.url = url
+        this.debug = debug
+    }
+
+    getClient(token?: string): GraphQLClient {
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+        }
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`
+        }
+
+        return new GraphQLClient(this.url, { headers })
+    }
+
+    private async handleRequest<T>(operation: () => Promise<T>): Promise<T> {
+        try {
+            const result = await operation()
+            if (this.debug) console.info('Operation successful:', result)
+            return result
+        } catch (error: any) {
+            if (this.debug) console.error('Operation failed:', error)
+
+            // Network error
+            if (error instanceof Error && error.message.includes('Network')) {
+                throw new NetworkError('error.networkError')
             }
-          `
-        case 'delete':
-          return `
-            ${alias}: delete_${op.table}(
-              where: ${this.objectToGraphQLParams(op.where)}
-            ) {
-              ${op.returning || 'affected_rows'}
+
+            // GraphQL error
+            if (error?.response?.errors) {
+                const firstError = error.response.errors[0]
+
+                if (firstError?.extensions?.code === 'permission-denied') {
+                    throw new PermissionDeniedError('error.permissionDenied')
+                }
+
+                if (firstError?.extensions?.code === 'invalid-jwt') {
+                    throw new PermissionDeniedError('error.invalidJwt')
+                }
+
+                throw new GraphQLError('error.graphQLOperationFailed')
             }
-          `
-        default:
-          throw new ValidationError('Invalid operation type')
-      }
-    })
 
-    return this.mutate<T>(`mutation { ${mutations.join('\n')} }`)
-  }
+            // Validation error
+            if (error instanceof GraphQLServiceError) {
+                throw new ValidationError('error.validationError')
+            }
 
-  /**
-   * Convert an object to GraphQL parameters format
-   * @param obj Object to convert
-   * @returns GraphQL parameters string
-   */
-  private objectToGraphQLParams(obj: unknown): string {
-    if (obj === null || obj === undefined) {
-      return 'null'
+            // Unexpected error
+            throw new GraphQLServiceError('error.unexpectedError')
+        }
     }
 
-    if (typeof obj !== 'object') {
-      return JSON.stringify(obj)
+    private createBatchMutation(operations: BatchOperation[]): string {
+        const mutations = operations.map((op, index) => {
+            const alias = `op${index}`
+            switch (op.type) {
+                case 'insert':
+                    return `
+                        ${alias}: insert_${op.table}(
+                            objects: ${JSON.stringify(op.data).replace(/"([^"]+)":/g, '$1:')}
+                            ${op.onConflict ? `, on_conflict: ${JSON.stringify(op.onConflict).replace(/"([^"]+)":/g, '$1:')}` : ''}
+                        ) {
+                            ${op.returning || 'affected_rows'}
+                        }
+                    `
+                case 'update':
+                    return `
+                        ${alias}: update_${op.table}(
+                            where: ${JSON.stringify(op.where).replace(/"([^"]+)":/g, '$1:')}
+                            _set: ${JSON.stringify(op.data).replace(/"([^"]+)":/g, '$1:')}
+                        ) {
+                            ${op.returning || 'affected_rows'}
+                        }
+                    `
+                case 'delete':
+                    return `
+                        ${alias}: delete_${op.table}(
+                            where: ${JSON.stringify(op.where).replace(/"([^"]+)":/g, '$1:')}
+                        ) {
+                            ${op.returning || 'affected_rows'}
+                        }
+                    `
+                default:
+                    throw new ValidationError('error.invalidOperationType')
+            }
+        })
+
+        return `mutation { ${mutations.join('\n')} }`
     }
 
-    if (Array.isArray(obj)) {
-      return `[${obj.map(item => this.objectToGraphQLParams(item)).join(', ')}]`
+    private async query(query: string, token?: string): Promise<any> {
+        return this.handleRequest(async () => {
+            const client = this.getClient(token)
+            return await client.request(gql`${query}`)
+        })
     }
 
-    const entries = Object.entries(obj as Record<string, unknown>).map(([key, value]) => {
-      // Handle special operators
-      if (key.startsWith('_')) {
-        return `${key}: ${this.objectToGraphQLParams(value)}`
-      }
+    private async mutate(mutation: string, token?: string): Promise<any> {
+        return this.handleRequest(async () => {
+            const client = this.getClient(token)
+            return await client.request(gql`${mutation}`)
+        })
+    }
 
-      return `${key}: ${this.objectToGraphQLParams(value)}`
-    })
+    public async get(
+        tableName: string,
+        options: {
+            select: any
+            where?: WhereClause
+            limit?: number
+            offset?: number
+            orderBy?: any
+            aggregate?: any
+        },
+        token?: string
+    ): Promise<any> {
+        const { select, where, limit, offset, orderBy, aggregate } = options
+        const query = createQuery(tableName, select, where, limit, offset, orderBy, aggregate)
+        return this.query(query, token)
+    }
 
-    return `{${entries.join(', ')}}`
-  }
+    public async insert(
+        tableName: string,
+        data: any,
+        onConflict: any = null,
+        returning: string | string[] = 'affected_rows',
+        token?: string
+    ): Promise<any> {
+        if (Array.isArray(returning)) {
+            returning = returning.join(' ')
+        }
 
-  /**
-   * Convert an object to GraphQL selection format
-   * @param obj Object to convert
-   * @returns GraphQL selection string
-   */
-  private objectToGraphQLSelection(obj: Record<string, unknown>): string {
-    return Object.entries(obj).map(([key, value]) => {
-      if (value === true) {
-        return key
-      }
+        const mutation = createInsertMutation(
+            tableName,
+            data,
+            onConflict,
+            returning
+        )
 
-      if (typeof value === 'object' && value !== null) {
-        return `${key} { ${this.objectToGraphQLSelection(value as Record<string, unknown>)} }`
-      }
+        return this.mutate(mutation, token)
+    }
 
-      return ''
-    }).filter(Boolean).join(' ')
-  }
+    public async update(
+        tableName: string,
+        data: any,
+        where: WhereClause,
+        returning: string = 'affected_rows',
+        token?: string
+    ): Promise<any> {
+        if (!where || Object.keys(where).length === 0) throw new ValidationError('error.whereClauseRequired')
+        const mutation = createUpdateMutation(tableName, data, where, returning)
+        return this.mutate(mutation, token)
+    }
+
+    public async updateMany(
+        tableName: string,
+        data: any,
+        returning: string = 'affected_rows',
+        token?: string
+    ): Promise<any> {
+        const mutation = createUpdateManyMutation(tableName, data, returning)
+        return this.mutate(mutation, token)
+    }
+
+    public async delete(
+        tableName: string,
+        where: WhereClause,
+        returning: string = 'affected_rows',
+        token?: string
+    ): Promise<any> {
+        if (!where || Object.keys(where).length === 0) throw new ValidationError('error.whereClauseRequired')
+        const mutation = createDeleteMutation(tableName, where, returning)
+        return this.mutate(mutation, token)
+    }
+
+    public async batch(
+        operations: BatchOperation[],
+        token?: string
+    ): Promise<Record<string, any>> {
+        if (!operations.length) {
+            throw new ValidationError('error.noOperationsBatchProvided')
+        }
+
+        const mutation = this.createBatchMutation(operations)
+        return this.mutate(mutation, token)
+    }
+}
+
+export const useGraphQL = (options: any): IGraphQLService => {
+    const graphqlService: IGraphQLService = new GraphQLService(options.url, options.debug || false)
+    return graphqlService
 }
