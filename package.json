@@ -1,5 +1,5 @@
 {
-  "name": "@arpix/nuxt-arpix-db-connect",
+  "name": "nuxt-arpix-db-connect",
   "version": "1.0.0",
   "description": "Nuxt module for DB Connect",
   "repository": {
@@ -10,12 +10,10 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/types.d.ts",
-      "import": "./dist/module.mjs",
-      "require": "./dist/module.cjs"
+      "types": "./dist/types.d.mts",
+      "import": "./dist/module.mjs"
     }
   },
-  "main": "./dist/module.cjs",
   "files": [
     "dist"
   ],
