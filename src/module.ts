@@ -1,29 +1,15 @@
-import { defineNuxtModule, addPlugin, addServerImportsDir, createResolver } from '@nuxt/kit'
+import { defineNuxtModule, addImportsDir, createResolver } from '@nuxt/kit'
 
-const MODULE_NAME = 'nuxt-arpix-db-connect'
-const CONFIG_KEY = 'dbConnect'
-
-// Hasura specific options
-export interface HasuraOptions {
-  url: string
-  wsUrl?: string
-  headers?: Record<string, string>
-}
-
-// Interface for future database connectors
-export interface GenericConnectorOptions {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any
-}
+const MODULE_NAME = 'nuxt-arpix-graphql-connect'
+const CONFIG_KEY = 'graphql'
 
 // Module options TypeScript interface definition
 export interface ModuleOptions {
-  dataOrigin: 'hasura' | string
-  hasura?: HasuraOptions
-  // Space for future integrations
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any
-  dataDebug?: boolean
+  httpUrl: string
+  wsUrl?: string
+  refreshTokenEndpoint?: string
+  defaultHeaders?: Record<string, string>
+  debug?: boolean
 }
 
 export default defineNuxtModule<ModuleOptions>({
@@ -34,38 +20,24 @@ export default defineNuxtModule<ModuleOptions>({
       nuxt: '^3.0.0 || ^4.0.0',
     },
   },
-  // Default configuration options of the Nuxt module
   defaults: {
-    dataOrigin: 'hasura',
-    dataDebug: false,
-    hasura: {
-      url: 'http://localhost:8080/v1/graphql',
-    },
+    httpUrl: 'http://localhost:8080/v1/graphql',
   },
   setup(options, nuxt) {
     const resolver = createResolver(import.meta.url)
 
-    // 1. Validate essential configuration
-    if (!options?.dataOrigin) {
-      throw new Error('dataOrigin is required when using the database connector')
+    // Validate essential configuration
+    if (!options?.httpUrl) {
+      throw new Error('GraphQL httpUrl is required. Please configure graphql.httpUrl in your nuxt.config.ts')
     }
 
-    // Validate Hasura configuration if selected
-    if (options.dataOrigin === 'hasura' && !options.hasura?.url) {
-      throw new Error('Hasura URL is required when using Hasura as data origin')
-    }
+    // Make options available in runtime via runtimeConfig
+    nuxt.options.runtimeConfig.public.graphql = options
 
-    // 2. Make options available in runtime
-    nuxt.options.runtimeConfig[CONFIG_KEY] = options
+    // Add composables directory for auto-import
+    const composablesDir = resolver.resolve('./runtime/composables')
+    addImportsDir(composablesDir)
 
-    // 3. Add server utilities directory for auto-import
-    // This will make `useDBConnector` available in server/api, server/routes, etc.
-    const runtimeDir = resolver.resolve('./runtime/utils')
-    addServerImportsDir(runtimeDir)
-
-    console.log(`[${MODULE_NAME}] Module set up with data origin: ${options.dataOrigin}`)
-
-    // Do not add the extension since the `.ts` will be transpiled to `.mjs` after `npm run prepack`
-    addPlugin(resolver.resolve('./runtime/plugin'))
+    console.log(`[${MODULE_NAME}] Module initialized - Generic GraphQL client ready`)
   },
 })

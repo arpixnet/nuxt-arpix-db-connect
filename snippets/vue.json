@@ -1,0 +1,128 @@
+{
+  "GraphQL Query": {
+    "prefix": "graphql-query",
+    "body": [
+      "const { query } = useGraphQLClient()",
+      "",
+      "const ${1:fetchData} = async () => {",
+      "  try {",
+      "    const result = await query(`",
+      "      query ${2:QueryName} {",
+      "        ${3:tableName} {",
+      "          ${4:id}",
+      "          ${5:name}",
+      "        }",
+      "      }",
+      "    `)",
+      "    ${6:// Handle result}",
+      "  } catch (error) {",
+      "    console.error('Query error:', error)",
+      "  }",
+      "}"
+    ],
+    "description": "Basic GraphQL query"
+  },
+  "GraphQL Mutation": {
+    "prefix": "graphql-mutation",
+    "body": [
+      "const { mutate } = useGraphQLClient()",
+      "",
+      "const ${1:createData} = async (${2:variables}) => {",
+      "  try {",
+      "    const result = await mutate(",
+      "      `",
+      "      mutation ${3:MutationName}(\\$${4:variable}: ${5:String}!) {",
+      "        ${6:action_name}(${4:variable}: \\$${4:variable}) {",
+      "          ${7:id}",
+      "        }",
+      "      }",
+      "      `,",
+      "      { ${4:variable}: ${2:variables}.${4:variable} }",
+      "    )",
+      "    return result",
+      "  } catch (error) {",
+      "    console.error('Mutation error:', error)",
+      "    throw error",
+      "  }",
+      "}"
+    ],
+    "description": "Basic GraphQL mutation"
+  },
+  "GraphQL Subscription": {
+    "prefix": "graphql-subscription",
+    "body": [
+      "const { subscribe } = useGraphQLClient()",
+      "",
+      "// Subscription state",
+      "const ${1:data} = ref(null)",
+      "let unsubscribe: (() => void) | null = null",
+      "",
+      "onMounted(() => {",
+      "  unsubscribe = subscribe(",
+      "    `",
+      "    subscription ${2:SubscriptionName} {",
+      "      ${3:tableName} {",
+      "        ${4:id}",
+      "        ${5:name}",
+      "      }",
+      "    }",
+      "    `,",
+      "    {",
+      "      next: (result) => {",
+      "        ${1:data}.value = result.${3:tableName}",
+      "      },",
+      "      error: (error) => console.error('Subscription error:', error)",
+      "    }",
+      "  )",
+      "})",
+      "",
+      "onUnmounted(() => {",
+      "  if (unsubscribe) unsubscribe()",
+      "})"
+    ],
+    "description": "Manual GraphQL subscription with lifecycle management"
+  },
+  "GraphQL Reactive Query": {
+    "prefix": "graphql-use-query",
+    "body": [
+      "const { useQuery } = useGraphQLClient()",
+      "",
+      "const { data, loading, error, refetch } = useQuery(",
+      "  `",
+      "  query ${1:QueryName} {",
+      "    ${2:tableName} {",
+      "      ${3:id}",
+      "      ${4:name}",
+      "    }",
+      "  }",
+      "  `",
+      ")"
+    ],
+    "description": "Reactive query using useQuery helper"
+  },
+  "GraphQL Reactive Subscription": {
+    "prefix": "graphql-use-subscription",
+    "body": [
+      "const { useSubscription } = useGraphQLClient()",
+      "",
+      "const { data, error, isActive, stop, start } = useSubscription(",
+      "  `",
+      "  subscription ${1:SubscriptionName} {",
+      "    ${2:tableName} {",
+      "      ${3:id}",
+      "      ${4:name}",
+      "    }",
+      "  }",
+      "  `",
+      ")"
+    ],
+    "description": "Reactive subscription using useSubscription helper"
+  },
+  "Use GraphQL Client": {
+    "prefix": "use-graphql-client",
+    "body": [
+      "const { query, mutate, subscribe, useQuery, useSubscription } = useGraphQLClient()"
+    ],
+    "description": "Import main composable"
+  }
+}

@@ -1,7 +1,7 @@
 {
   "name": "nuxt-arpix-db-connect",
-  "version": "1.0.1",
-  "description": "Nuxt module for DB Connect",
+  "version": "2.0.0",
+  "description": "Generic GraphQL client module for Nuxt 3/4 with graphql-request and graphql-ws",
   "repository": {
     "type": "git",
     "url": "https://github.com/arpixnet/nuxt-arpix-db-connect"
@@ -32,7 +32,9 @@
     "@nuxt/kit": "^3.16.2",
     "graphql": "^16.10.0",
     "graphql-request": "^7.1.2",
-    "graphql-ws": "^6.0.4"
+    "graphql-ws": "^6.0.4",
+    "jwt-decode": "^4.0.0",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "@nuxt/devtools": "^2.4.0",
